@@ -3,53 +3,134 @@
  */
 
 var express = require('express')
-  , app = module.exports = express.createServer();
+ 	//, socketio = require('socket.io')
+  	//, http = require('http')
+  	//, path = require('path')
+	, crypto = require('crypto')
+	, hash = require('./lib/pass').hash
+	, md5sum = crypto.createHash('md5')
+	, db = require('./lib/db')
+	, user = require('./routes/user');
+var app = module.exports = express();
+app.configure(function(){
+	app.set('port', process.env.PORT || 3000);
+	app.use(express.favicon());
+	//config
+	/*app.register('html', require('ejs'));
+	app.engine('html', require('ejs').renderFile);
+	//make ".html" the default
+	app.set('view engine', 'html');*/
+	app.set('view engine', 'ejs');
+	app.set('views', __dirname + '/views');
+});
+
+app.configure('development', function(){
+	app.set('url', 'http://nttchat.ntt');
+	app.use(express.errorHandler());
+	// middleware
+
+	// add favicon() before logger() so
+	// GET /favicon.ico requests are not
+	// logged, because this middleware
+	// reponds to /favicon.ico and does not
+	// call next()
+	app.use(express.favicon());
+	// custom log format
+	if ('test' != process.env.NODE_ENV)
+	  app.use(express.logger(':method :url'));
+
+	// parses request cookies, populating
+	// req.cookies and req.signedCookies
+	// when the secret is passed, used 
+	// for signing the cookies.
+	app.use(express.cookieParser('my secret here'));
+	app.use(express.session({key: 'some-key',secret: 'some-We1rD sEEEEEcret!'}));
+	// parses json, x-www-form-urlencoded, and multipart/form-data
+	app.use(express.bodyParser());
+});
 
 
-// add favicon() before logger() so
-// GET /favicon.ico requests are not
-// logged, because this middleware
-// reponds to /favicon.ico and does not
-// call next()
-app.use(express.favicon());
+function authenticate(name, pass, fn) {
+	  if (!module.parent) console.log('authenticating %s:%s', name, pass);
+	  var user = users[name];
+	  // query the db for the given username
+	  if (!user) return fn(new Error('cannot find user'));
+	  // apply the same algorithm to the POSTed password, applying
+	  // the hash against the pass / salt, if there is a match we
+	  // found the user
+	  hash(pass, user.salt, function(err, hash){
+	    if (err) return fn(err);
+	    if (hash == user.hash) return fn(null, user);
+	    fn(new Error('invalid password'));
+	  })
+	}
 
-// custom log format
-if ('test' != process.env.NODE_ENV)
-  app.use(express.logger(':method :url'));
-
-// parses request cookies, populating
-// req.cookies and req.signedCookies
-// when the secret is passed, used 
-// for signing the cookies.
-app.use(express.cookieParser('my secret here'));
-
-// parses json, x-www-form-urlencoded, and multipart/form-data
-app.use(express.bodyParser());
-
+app.get('/users', user.list);
+app.get('/registration',user.registration);
+app.post('/registration', function(req, res){
+	db.db_insert('users',{uid:null,name:'thanhtuan',pass: 'sdf"sdf',mail: 'hahaha@gaga.com'},res);
+	
+	//var validate  = user.email_validate(req.body.mail,res);
+	//console.log(validate);
+	//res.send(req.body.mail);
+});
+		
 app.get('/', function(req, res){
-  if (req.cookies.remember) {
-    res.send('Remembered :). Click to <a href="/forget">forget</a>!.');
-  } else {
-    res.send('<form method="post"><p>Check to <label>'
-      + '<input type="checkbox" name="remember"/> remember me</label> '
-      + '<input type="submit" value="Submit"/>.</p></form>');
-  }
+	if (req.session.user) {
+		//req.cookies.remember
+	    //next();
+	  } else {
+	    req.session.error = 'Access denied!';
+	    res.redirect('/login');
+	  }
 });
 
-app.get('/forget', function(req, res){
-  res.clearCookie('remember');
-  res.redirect('back');
+app.get('/login', function(req, res){
+	  res.local('layout', false);
+	  res.render('login', {message:  (req.session.error?req.session.error:'haha') });
 });
 
-app.post('/', function(req, res){
-  var minute = 60000;
-  if (req.body.remember) res.cookie('remember', 1, { maxAge: minute });
-  res.redirect('back');
-});
-
+app.get('/logout', function(req, res){
+	  // destroy the user's session to log them out
+	  // will be re-created next request
+	  res.clearCookie('remember');
+	  req.session.destroy(function(){
+	    res.redirect('/');
+	    //res.redirect('back');
+	  });
+	});
+app.post('/login', function(req, res){
+	db.getUserDetailsByUsername(req.body.username,res);
+	
+	  /*authenticate(req.body.username, req.body.password, function(err, user){
+		var minute = 60000;
+		if (req.body.remember) res.cookie('remember', 1, { maxAge: minute });
+		  
+	    if (user) {
+	      // Regenerate session when signing in
+	      // to prevent fixation 
+	      req.session.regenerate(function(){
+	        // Store the user's primary key 
+	        // in the session store to be retrieved,
+	        // or in this case the entire user object
+	        req.session.user = user;
+	        req.session.success = 'Authenticated as ' + user.name
+	          + ' click to <a href="/logout">logout</a>. '
+	          + ' You may now access <a href="/restricted">/restricted</a>.';
+	        res.redirect('/restricted');
+	      });
+	    } else {
+	      req.session.error = 'Authentication failed, please check your '
+	        + ' username and password.'
+	        + ' (use "tj" and "foobar")';
+	      res.redirect('/login');
+	    }
+	  });*/
+	});
 if (!module.parent){
-  app.listen(3000);
-  console.log('Express started on port 3000');
+	app.listen(app.get('port'), function(){
+		  console.log("Express server listening on port " + app.get('port'));
+	});
 }
 
 
@@ -130,34 +211,4 @@ io.sockets.on('connection', function (socket) {
    });
 
 });
-*/
-/*
-var mysql = require('mysql');
-var client = mysql.createConnection({ user: 'user1',  password: 'secret',database:'mydatabase'});
-
-exports.getUserDetailsByEmail=function(email, res) {
-  client.query("select * from userdetails where email=?",[email],function selectCb(err, details, fields) {
-      res.send(err|details);
-  });
-}
-*/
-/*
-var mysql = require('mysql');
-var TEST_DATABASE = 'nttchat';
-var client = mysql.createClient({
-  user: 'root',
-  password: '7144',
-});
-client.query('USE '+TEST_DATABASE);
-client.query(
-  'SELECT * FROM users',
-  function selectCb(err, results, fields) {
-    if (err) {
-      throw err;
-    }
-    //console.log(results);
-    console.log(fields);
-    //client.end();
-  }
-);
 */

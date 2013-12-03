@@ -1,0 +1,39 @@
+
+<% var title = 'Sign up an account' %>
+<% include head %>
+<h1>Sign up</h1>
+<%= message %>
+<form method="post" action="/registration">
+<p>
+    <label>First name:</label>
+    <input type="text" name="first_name">
+  </p>
+  <p>
+    <label>Last name:</label>
+    <input type="text" name="last_name">
+  </p>
+  <p>
+    <label>Username:</label>
+    <input type="text" name="username">
+  </p>
+  <p>
+    <label>Password:</label>
+    <input type="password" name="password">
+  </p>
+  <p>
+    <label>Retype Password:</label>
+    <input type="password" name="repassword">
+  </p>
+  <p>
+    <label>Email:</label>
+    <input type="text" name="mail">
+  </p>
+  <p>
+    <label><input type="radio" name="gender" value="1" > Male</label>
+	<label><input type="radio" name="gender" value="0"> Female</label>
+  </p>
+  <p>
+    <input type="submit" value="Create account">
+  </p>
+</form>
+<% include foot %>
