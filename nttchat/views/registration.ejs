@@ -3,34 +3,38 @@
 <% include head %>
 <h1>Sign up</h1>
 <%= message %>
-<form method="post" action="/registration">
+<form id="form-registration" enctype="multipart/form-data" action="/registration" method="post">
 <p>
     <label>First name:</label>
-    <input type="text" name="first_name">
+    <input type="text" name="first_name" value="<%= data.body.first_name %>">
   </p>
   <p>
     <label>Last name:</label>
-    <input type="text" name="last_name">
+    <input type="text" name="last_name" value="<%= data.body.last_name %>">
   </p>
   <p>
     <label>Username:</label>
-    <input type="text" name="username">
+    <input type="text" name="username" value="<%= data.body.username %>">
   </p>
   <p>
     <label>Password:</label>
     <input type="password" name="password">
   </p>
   <p>
-    <label>Retype Password:</label>
+    <label>Confirm password:</label>
     <input type="password" name="repassword">
   </p>
   <p>
     <label>Email:</label>
-    <input type="text" name="mail">
+    <input type="text" name="mail" value="<%= data.body.mail %>">
   </p>
   <p>
     <label><input type="radio" name="gender" value="1" > Male</label>
 	<label><input type="radio" name="gender" value="0"> Female</label>
+  </p>
+  <p>
+    <label>Avatar</label>
+	<input type="file" id="userPhotoInput" name="avatar" />
   </p>
   <p>
     <input type="submit" value="Create account">

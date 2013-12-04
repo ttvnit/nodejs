@@ -1,12 +1,14 @@
+ 
 var mysql = require('mysql');
-var client = mysql.createClient({
+module.exports.client = mysql.createClient(root.settings.DATABASE);
+/*{
 	user : 'root',
 	password : '7144',
 	database : 'nttchat'
-});
+}*/
 // client.query('USE nttchat');
 exports.getUserDetailsByUsername = function(username, res) {
-	client.query("select uid,name,mail from users where name=?", [ username ],
+	this.client.query("select uid,name,mail from users where name=?", [ username ],
 			function selectCb(err, results, fields) {
 		 //console.log(results);
 	    //console.log(fields.mail);
@@ -49,7 +51,7 @@ exports.db_insert = function(table, values , res) {
 	}
 	
 	sql = sql + ' (' + field_name.join(',') + ') values ('+ field_params.join(',')  +')'
-	client.query(sql , field_val, function(err,result){
+	this.client.query(sql , field_val, function(err,result){
         if(err){
             console.log("ClientReady Error:" + err.message);
             return;
