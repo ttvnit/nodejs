@@ -1,0 +1,15 @@
+
+<% var title = 'Sign up an account' %>
+<% include head %>
+<h1>Simple chat</h1>
+<%= message %>
+<p>
+Welcome <%= user.first_name %> <%= user.last_name %> to simple chat app, click to <a href="/logout">logout</a>
+</p>
+<p>
+<input type="hidden" id="username" value="<%= user.name %>" />
+<input type="text" id="msg"></input><input type="submit" value="Click me" id="send-message" />
+</p>
+      <p id="log"></p>
+      <p id="data_recieved"></p>
+<% include foot %>

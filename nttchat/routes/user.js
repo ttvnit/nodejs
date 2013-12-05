@@ -2,21 +2,23 @@ var db = require(root.settings.ROOT_DIR + 'lib/db');
 exports.validate = function(req, res, fn) {
 	// arguments.length
 	error = Array();
-	if(req.body.password != req.body.repassword){
-		error[0] = 'The specified passwords do not match';
+	if (req.body.password != req.body.repassword) {
+		error.push('The specified passwords do not match');
 		fn(error);
 		return;
 	}
 	db.client.query("select uid from users where mail=?", [ req.body.mail ],
 			function(err, result, fields) {
-				
-				if (result.length){
-					error[1] = 'The email ' + req.body.mail + ' is already registered.';
+
+				if (result.length) {
+					error.push('The email ' + req.body.mail
+							+ ' is already registered.');
 				}
 				db.client.query("select uid from users where name=?",
 						[ req.body.username ], function(err, result, fields) {
 							if (result.length) {
-								error[2] = 'The username "' + req.body.username + '" is already registered.';
+								error.push('The username "' + req.body.username
+										+ '" is already registered.');
 							}
 							fn(error);
 						});
@@ -24,8 +26,9 @@ exports.validate = function(req, res, fn) {
 }
 
 exports.add_user = function(data, res) {
-	db.db_insert('users',data,res);	
-	//db.db_insert('users',{uid:null,name:'ttvnit',pass: 'hahaha',mail:'ttvnit@gmail.com'},res);
+	db.db_insert('users', data, res);
+	// db.db_insert('users',{uid:null,name:'ttvnit',pass:
+	// 'hahaha',mail:'ttvnit@gmail.com'},res);
 }
 exports.username_validate = function(username, res) {
 	client.query("select uid from users where name=?", [ username ],
@@ -34,6 +37,30 @@ exports.username_validate = function(username, res) {
 			});
 }
 exports.list = function(req, res) {
+	db.client.query(
+					"select uid,name,mail from users",[],
+					function selectCb(err, results, fields) {
+						if (err)
+							throw err;
+						var output = '<html><head></head><body><h1>Latest Posts</h1><ul><table border=1><tr>';
+						for ( var index in fields) {
+							output += '<td>' + fields[index].name + '</td>';
+						}
+						output += '</tr>';
+						for ( var index in results) {
+							output += '<tr><td>' + results[index].uid + '</td>';
+							output += '<td>' + results[index].name + '</td>';
+							output += '<td>' + results[index].mail
+									+ '</td></tr>';
+						}
+						output += '</ul></body></html>';
+						res.writeHead(200, {
+							'Content-Type' : 'text/html'
+						});
+						res.end(output);
+
+					});
+
 	res.send("respond with a resource");
 };
 exports.registration = function(req, res) {
@@ -50,6 +77,15 @@ exports.registration = function(req, res) {
 		message : (req.session.error ? req.session.error : '')
 	});
 };
+exports.getUserDetailsByUsername = function(username, res, fn) {
+	db.client.query("select * from users where name=?",[ username ], 
+			function selectCb(err, results, fields) {
+				// res.send(err | fields);
+				if (err) throw err;
+				fn(results, fields);
+			});
+};
+
 exports.registration_submit = function(req, res) {
 	// var validate = module.parent.user.email_validate(req.body.mail);
 	// console.log(req.body);

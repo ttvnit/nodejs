@@ -7,29 +7,7 @@ module.exports.client = mysql.createClient(root.settings.DATABASE);
 	database : 'nttchat'
 }*/
 // client.query('USE nttchat');
-exports.getUserDetailsByUsername = function(username, res) {
-	this.client.query("select uid,name,mail from users where name=?", [ username ],
-			function selectCb(err, results, fields) {
-		 //console.log(results);
-	    //console.log(fields.mail);
-				//res.send(err | fields);
-		if (err) throw err;
-		var output = '<html><head></head><body><h1>Latest Posts</h1><ul><table border=1><tr>';
-		for (var index in fields) {
-		output += '<td>' + fields[index].name + '</td>';
-		}
-		output += '</tr>';
-		for (var index in results) {
-		output += '<tr><td>' + results[index].uid + '</td>';
-		output += '<td>' + results[index].name + '</td>';
-		output += '<td>' + results[index].mail + '</td></tr>';
-		}
-		output += '</ul></body></html>';
-		res.writeHead(200, {'Content-Type': 'text/html'});
-		res.end(output);
-		
-			});
-}
+
 exports.db_insert = function(table, values , res) {
 	var sql = 'insert into ' + table;
 	var field_name = Array();

@@ -1,16 +1,26 @@
 /**
  * Module dependencies.
  */
+function reg_replace(inRegexp, strOrigin, strReplace) {
+	// var re = new RegExp(inRegexp,"g");
+	var re = new RegExp(inRegexp);
+	if (strOrigin.match(re)) {
+		return strOrigin.replace(re, strReplace);
+	}
+	return strOrigin;
+}
 root.settings = require('./config/settings');
 var express = require('express')
 // , socketio = require('socket.io')
 // , http = require('http')
 // , path = require('path')
-, fs = require('fs')
-, sys = require('sys')
-, crypto = require('crypto')
-, hash = require('./lib/pass').hash
-, md5sum = crypto.createHash('md5');
+, fs = require('fs'), sys = require('sys')
+// , im = require('immagick')
+//, im = require('imagemagick')
+, crypto = require('crypto');
+//, hash = require('./lib/pass').hash
+
+
 var user = require('./routes/user');
 var app = express();
 app.configure(function() {
@@ -52,71 +62,68 @@ app.configure('development', function() {
 	app.use(express.methodOverride());
 	// Session-persisted message middleware
 
-	app.use(function(req, res, next) {
-		var err = req.session.error, msg = req.session.success;
-		delete req.session.error;
-		delete req.session.success;
-		res.locals.message = '';
-		if (err)
-			res.locals.message = '<p class="msg error">' + err + '</p>';
-		if (msg)
-			res.locals.message = '<p class="msg success">' + msg + '</p>';
-		next();
-	});
+	//app.use(function(req, res, next) {
+	//	var err = req.session.error, msg = req.session.success;
+	//	delete req.session.error;
+	//	delete req.session.success;
+	//	res.locals.message = '';
+	//	if (err)
+	//		res.locals.message = '<p class="msg error">' + err + '</p>';
+	//	if (msg)
+	//		res.locals.message = '<p class="msg success">' + msg + '</p>';
+	//	next();
+	//});
 });
 
-function authenticate(name, pass, fn) {
-	if (!module.parent)
-		console.log('authenticating %s:%s', name, pass);
-	var user = users[name];
-	// query the db for the given username
-	if (!user)
-		return fn(new Error('cannot find user'));
-	// apply the same algorithm to the POSTed password, applying
-	// the hash against the pass / salt, if there is a match we
-	// found the user
-	hash(pass, user.salt, function(err, hash) {
-		if (err)
-			return fn(err);
-		if (hash == user.hash)
-			return fn(null, user);
-		fn(new Error('invalid password'));
-	})
-}
 app.get('/users', user.list);
 app.get('/registration', user.registration);
-app.post('/registration', function(req, res) {
+
+app.post('/registration',function(req, res) {
 	req.session.error = Array();
-	user.validate(req, res, function(error) {
-		if(error.length) { 
+	user.validate(req,res,function(error) {
+		if (error.length) {
 			req.session.error = error.join('\n');
 			user.registration(req, res);
-		}else{
-			data = {uid:null,name:req.body.username,pass: req.body.password,mail:req.body.mail,gender:req.body.gender};
-			if(req.files.avatar.name !=''){
-				fs.readFile(req.files.avatar.path, function(err, filecontent) {
-					var newPath = root.settings.ROOT_DIR + 'public/images/'
-							+ req.files.avatar.name;
-					fs.writeFile(newPath, filecontent, function(err) {
-						data.avatar = req.files.avatar.name;
-						//console.log(data);
-						user.add_user(data,res);
-						res.redirect("back");
-					});
+		} else {
+			data = {
+					uid : null,
+					first_name : req.body.first_name,
+					last_name : req.body.last_name,
+					name : req.body.username,
+					pass : crypto.createHash('md5').update(req.body.password).digest('hex'),
+					mail : req.body.mail,
+					gender : req.body.gender
+					};
+			if (req.files.avatar.name != '') {
+				fs.readFile(req.files.avatar.path,function(err,filecontent) {
+						var newPath = root.settings.ROOT_DIR+ 'public/images/'+ req.files.avatar.name;
+						//var thumbPath = root.settings.ROOT_DIR+ 'public/images/thumbs/'+ req.files.avatar.name;
+						fs.writeFile(newPath,filecontent,function(err) {
+								//im.resize({srcPath : newPath,dstPath : thumbPath,width : 200},function(err,stdout,stderr) {
+								//		if (err)	throw err;
+								//		console.log('resized image to fit within 200x200px');
+								//});
+								data.avatar = req.files.avatar.name;
+								// console.log(data);
+								user.add_user(data,res);
+								res.redirect("back");
+						});
 				});
-			}else{
-				user.add_user(data,res);
+			} else {
+				user.add_user(data, res);
 				res.redirect("back");
 			}
 		}
-		
 	});
 });
 
 app.get('/', function(req, res) {
 	if (req.session.user) {
 		// req.cookies.remember
-		// next();
+		var server = require('./routes/chatserver');
+		res.render('chat', {user:req.session.user,
+			message : (req.session.error ? req.session.error : '')
+		});
 	} else {
 		req.session.error = 'Access denied!';
 		res.redirect('/login');
@@ -125,7 +132,7 @@ app.get('/', function(req, res) {
 
 app.get('/login', function(req, res) {
 	res.render('login', {
-		message : (req.session.error ? req.session.error : 'haha')
+		message : (req.session.error ? req.session.error : '')
 	});
 });
 
@@ -139,24 +146,33 @@ app.get('/logout', function(req, res) {
 	});
 });
 app.post('/login', function(req, res) {
-	db.getUserDetailsByUsername(req.body.username, res);
-
-	/*
-	 * authenticate(req.body.username, req.body.password, function(err, user){
-	 * var minute = 60000; if (req.body.remember) res.cookie('remember', 1, {
-	 * maxAge: minute });
-	 * 
-	 * if (user) { // Regenerate session when signing in // to prevent fixation
-	 * req.session.regenerate(function(){ // Store the user's primary key // in
-	 * the session store to be retrieved, // or in this case the entire user
-	 * object req.session.user = user; req.session.success = 'Authenticated as ' +
-	 * user.name + ' click to <a href="/logout">logout</a>. ' + ' You may now
-	 * access <a href="/restricted">/restricted</a>.';
-	 * res.redirect('/restricted'); }); } else { req.session.error =
-	 * 'Authentication failed, please check your ' + ' username and password.' + '
-	 * (use "tj" and "foobar")'; res.redirect('/login'); } });
-	 */
+	user.getUserDetailsByUsername(req.body.username, res, function(result,fields){
+		if(result.length){
+			userObject = result[0];
+			console.log(userObject);
+			if(crypto.createHash('md5').update(req.body.password).digest('hex') == userObject.pass){ // Regenerate session when signing in // to prevent fixation
+				  if (req.body.remember){
+					  var minute = 60000;
+					  res.cookie('remember', 1, {maxAge: minute });
+				  }
+				  req.session.regenerate(function(){// Store the user's primary key // in the session store to be retrieved, // or in this case the entire user object 
+					  req.session.user = userObject; 
+					  req.session.success = 'Authenticated as ' + userObject.name + ' click to <a href="/logout">logout</a>';
+					  res.redirect('/'); 
+				  }); 
+				  
+			}else{
+				req.session.error ='Authentication failed. Please try again'; 
+				res.redirect('/login');
+			}
+		}else{
+			req.session.error ='The username is not exists.'; 
+			res.redirect('/login');
+		}
+	});
 });
+	 
+
 if (!module.parent) {
 	app.listen(app.get('port'), function() {
 		console.log("Express server listening on port " + app.get('port'));
