@@ -26,9 +26,12 @@ exports.validate = function(req, res, fn) {
 }
 
 exports.add_user = function(data, res) {
-	db.db_insert('users', data, res);
-	// db.db_insert('users',{uid:null,name:'ttvnit',pass:
-	// 'hahaha',mail:'ttvnit@gmail.com'},res);
+	db.db_insert('users', data, res, function(result){
+		if(result.insertId){
+			db.db_insert('user_groups', {gid:null,uid: result.insertId,group_name: 'General',is_system: 1},function(){});
+		}
+	});
+	// db.db_insert('users',{uid:null,name:'ttvnit',pass:'hahaha',mail:'ttvnit@gmail.com'},res);
 }
 exports.username_validate = function(username, res) {
 	client.query("select uid from users where name=?", [ username ],
@@ -37,31 +40,12 @@ exports.username_validate = function(username, res) {
 			});
 }
 exports.list = function(req, res) {
-	db.client.query(
-					"select uid,name,mail from users",[],
+	db.client.query("select * from users",[],
 					function selectCb(err, results, fields) {
 						if (err)
 							throw err;
-						var output = '<html><head></head><body><h1>Latest Posts</h1><ul><table border=1><tr>';
-						for ( var index in fields) {
-							output += '<td>' + fields[index].name + '</td>';
-						}
-						output += '</tr>';
-						for ( var index in results) {
-							output += '<tr><td>' + results[index].uid + '</td>';
-							output += '<td>' + results[index].name + '</td>';
-							output += '<td>' + results[index].mail
-									+ '</td></tr>';
-						}
-						output += '</ul></body></html>';
-						res.writeHead(200, {
-							'Content-Type' : 'text/html'
-						});
-						res.end(output);
-
+						res.send(results);
 					});
-
-	res.send("respond with a resource");
 };
 exports.registration = function(req, res) {
 	if (!req.body.first_name) {
@@ -70,6 +54,7 @@ exports.registration = function(req, res) {
 			last_name : '',
 			username : '',
 			mail : '',
+			gender: 1,
 		};
 	}
 	res.render('registration', {

@@ -8,7 +8,7 @@ module.exports.client = mysql.createClient(root.settings.DATABASE);
 }*/
 // client.query('USE nttchat');
 
-exports.db_insert = function(table, values , res) {
+exports.db_insert = function(table, values , res, fn) {
 	var sql = 'insert into ' + table;
 	var field_name = Array();
 	var field_val = Array();
@@ -34,7 +34,7 @@ exports.db_insert = function(table, values , res) {
             console.log("ClientReady Error:" + err.message);
             return;
         }
-        console.log('inserted:'+result.affectedRows+' ros.');
+        fn(result);
         console.log('Id inserted:'+ result.insertId);
     });
 }

@@ -1,4 +1,3 @@
-
 <% var title = 'Sign up an account' %>
 <% include head %>
 <h1>Simple chat</h1>
@@ -6,10 +5,17 @@
 <p>
 Welcome <%= user.first_name %> <%= user.last_name %> to simple chat app, click to <a href="/logout">logout</a>
 </p>
-<p>
-<input type="hidden" id="username" value="<%= user.name %>" />
-<input type="text" id="msg"></input><input type="submit" value="Click me" id="send-message" />
-</p>
+<div id="chat-content-wrapper">
+<div id="list-user-wrapper">
+	<ul id="list-user" >
+	</ul>
+</div>
+<div id="list-chat-wrapper">
+	<input type="hidden" id="username" value="<%= user.name %>" />
+	<input type="text" id="msg"></input><input type="submit" value="Click me" id="send-message" />
+	</p>
       <p id="log"></p>
       <p id="data_recieved"></p>
+      </div>
+</div>
 <% include foot %>

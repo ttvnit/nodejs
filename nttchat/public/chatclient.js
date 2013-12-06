@@ -1,10 +1,38 @@
          var name = '';
-         var socket = io.connect('http://nttchat.ntt:8000');
+         var url = 'http://nttchat.ntt:3000';
+         var socket = io.connect(url);
+         function init_list_user(){
+        	 $("#list-user li a").each(function(e, i) {
+     			$(this).click(function(event) {
+    				alert($(this).attr('id'));
+    			});
+    		});	
+        	 //alert($(aObject).attr('id'));
+         }
+         function update_list_user(){
+        	 $.ajax({
+        		 dataType: "json",
+        		 url: url+'/users',
+        		 //data: data,
+        		 //success: success,
+        		 cache: false
+        		 })
+        		 .done(function( data) {
+        			 console.log(data);
+        			$.each( data, function( key, val ) {
+        				 $("<li><a id='" + val.name + "' href='#' >" + val.first_name + ' ' + val.last_name + "</a></li>").appendTo( "#list-user" );
+        			});
+        			init_list_user();
+        			 //$( "#results" ).append( html );
+        		 });
+         }
          function send_message(message){
         	// just some simple logging
              $("p#log").html('sent message: ' + message);
           // send message on inputbox to server
              socket.emit('chat', $("input#msg").val() );
+             
+             //socket.emit("private", { msg: chatMsg.val(), to: selected.text() });
              
              // the server will recieve the message, 
              // then maybe do some processing, then it will 
@@ -44,7 +72,7 @@
             // send the name to the server, and the server's 
             // register wait will recieve this.
             socket.emit('register', name );
-            
+            update_list_user();
          });
          
          // listen for chat event and recieve data
@@ -57,3 +85,11 @@
             $("p#log").html('got message: ' + data.msg);
             
          });
+         socket.on("private", function(data) {
+        	 console.log(data);
+        	  //chatLog.append('<li class="private"><em><strong>'+ data.from +' -> '+ data.to +'</strong>: '+ data.msg +'</em></li>');
+         }); 
+         socket.on('broadcast', function (data) {
+             //console.log(data);
+             alert('broadcast');
+          });

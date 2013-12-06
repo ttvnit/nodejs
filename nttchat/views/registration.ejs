@@ -29,8 +29,8 @@
     <input type="text" name="mail" value="<%= data.body.mail %>">
   </p>
   <p>
-    <label><input type="radio" name="gender" value="1" > Male</label>
-	<label><input type="radio" name="gender" value="0"> Female</label>
+    <label><input type="radio" name="gender" <% if(data.body.gender==1){ %> checked="checked" <%} %> value="1" > Male</label>
+	<label><input type="radio" name="gender" <% if(data.body.gender==0){ %> checked="checked" <%} %> value="0"> Female</label>
   </p>
   <p>
     <label>Avatar</label>

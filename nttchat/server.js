@@ -12,7 +12,7 @@ function reg_replace(inRegexp, strOrigin, strReplace) {
 root.settings = require('./config/settings');
 var express = require('express')
 // , socketio = require('socket.io')
-// , http = require('http')
+ , http = require('http')
 // , path = require('path')
 , fs = require('fs'), sys = require('sys')
 // , im = require('immagick')
@@ -20,9 +20,9 @@ var express = require('express')
 , crypto = require('crypto');
 //, hash = require('./lib/pass').hash
 
-
 var user = require('./routes/user');
 var app = express();
+module.exports.server = http.createServer(app);
 app.configure(function() {
 	app.set('port', process.env.PORT || 3000);
 	app.use(express.favicon());
@@ -56,6 +56,19 @@ app.configure('development', function() {
 	// for signing the cookies.
 	app.use(express.cookieParser('my secret here'));
 	app.use(express.session());
+	//app.use(express.session({ secret: '__YouDontKnow__', store: new RedisStore }));
+	app.use(function(req, res, next){
+		  if (req.session.user) {
+				
+			} else if(req.url != '/login' && req.url != '/logout' && req.url != '/registration') {
+				console.log('!!!!!!!!!');
+				req.session.error = 'Access denied!';
+				res.end();
+				res.redirect('/login');
+			}
+		  next();
+		  return;
+	});
 	// parses json, x-www-form-urlencoded, and multipart/form-data
 	app.use(express.bodyParser());
 	// support _method (PUT in forms etc)
@@ -75,6 +88,8 @@ app.configure('development', function() {
 	//});
 });
 
+	
+//app.use(function(req, res, next){});
 app.get('/users', user.list);
 app.get('/registration', user.registration);
 
@@ -92,7 +107,9 @@ app.post('/registration',function(req, res) {
 					name : req.body.username,
 					pass : crypto.createHash('md5').update(req.body.password).digest('hex'),
 					mail : req.body.mail,
-					gender : req.body.gender
+					gender : req.body.gender,
+					created: new Date().getTime(),
+					status: 1
 					};
 			if (req.files.avatar.name != '') {
 				fs.readFile(req.files.avatar.path,function(err,filecontent) {
@@ -118,16 +135,13 @@ app.post('/registration',function(req, res) {
 });
 
 app.get('/', function(req, res) {
-	if (req.session.user) {
-		// req.cookies.remember
-		var server = require('./routes/chatserver');
-		res.render('chat', {user:req.session.user,
-			message : (req.session.error ? req.session.error : '')
-		});
-	} else {
-		req.session.error = 'Access denied!';
-		res.redirect('/login');
-	}
+	// req.cookies.remember
+	//req.session.user = req.cookies.user;
+	require('./routes/chatserver');
+	var scriptsA = ['http://nttchat.ntt:'+app.get('port')+'/socket.io/socket.io.js','http://nttchat.ntt/public/chatclient.js'];
+	res.render('chat', {scripts:scriptsA,user:req.session.user,
+		message : (req.session.error ? req.session.error : '')
+	});
 });
 
 app.get('/login', function(req, res) {
@@ -140,6 +154,7 @@ app.get('/logout', function(req, res) {
 	// destroy the user's session to log them out
 	// will be re-created next request
 	res.clearCookie('remember');
+	res.clearCookie('user');
 	req.session.destroy(function() {
 		res.redirect('/');
 		// res.redirect('back');
@@ -149,14 +164,15 @@ app.post('/login', function(req, res) {
 	user.getUserDetailsByUsername(req.body.username, res, function(result,fields){
 		if(result.length){
 			userObject = result[0];
-			console.log(userObject);
 			if(crypto.createHash('md5').update(req.body.password).digest('hex') == userObject.pass){ // Regenerate session when signing in // to prevent fixation
-				  if (req.body.remember){
-					  var minute = 60000;
-					  res.cookie('remember', 1, {maxAge: minute });
-				  }
 				  req.session.regenerate(function(){// Store the user's primary key // in the session store to be retrieved, // or in this case the entire user object 
 					  req.session.user = userObject; 
+					  if (req.body.remember){
+						  req.session.cookie.expires = false;
+					  }else{
+						  req.session.cookie.maxAge = root.settings.COOKIE_EXPIRED;
+						  res.cookie('user', userObject, {maxAge: root.settings.COOKIE_EXPIRED });
+					  }
 					  req.session.success = 'Authenticated as ' + userObject.name + ' click to <a href="/logout">logout</a>';
 					  res.redirect('/'); 
 				  }); 
@@ -174,7 +190,8 @@ app.post('/login', function(req, res) {
 	 
 
 if (!module.parent) {
-	app.listen(app.get('port'), function() {
+	//this.server.listen(process.env.PORT, process.env.IP);
+	this.server.listen(app.get('port'), function() {
 		console.log("Express server listening on port " + app.get('port'));
 	});
 }

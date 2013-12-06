@@ -1,4 +1,4 @@
-(function($) {
+/*(function($) {
 	function init_registration(){
 		if(typeof($('#form-registration').attr('id')) != 'undefined'){
 			
@@ -12,3 +12,4 @@
 	
 	});
 })(jQuery);
+*/
