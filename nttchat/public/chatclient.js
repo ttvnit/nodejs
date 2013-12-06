@@ -4,7 +4,7 @@
          function init_list_user(){
         	 $("#list-user li a").each(function(e, i) {
      			$(this).click(function(event) {
-    				alert($(this).attr('id'));
+     				$("input#to_user").val($(this).attr('id'));
     			});
     		});	
         	 //alert($(aObject).attr('id'));
@@ -20,7 +20,7 @@
         		 .done(function( data) {
         			 console.log(data);
         			$.each( data, function( key, val ) {
-        				 $("<li><a id='" + val.name + "' href='#' >" + val.first_name + ' ' + val.last_name + "</a></li>").appendTo( "#list-user" );
+        				 $("<li><a id='" + val.name + "' href='javascript:;' >" + val.first_name + ' ' + val.last_name + "</a></li>").appendTo( "#list-user" );
         			});
         			init_list_user();
         			 //$( "#results" ).append( html );
@@ -30,9 +30,9 @@
         	// just some simple logging
              $("p#log").html('sent message: ' + message);
           // send message on inputbox to server
-             socket.emit('chat', $("input#msg").val() );
+             //socket.emit('chat', $("input#msg").val() );
              
-             //socket.emit("private", { msg: chatMsg.val(), to: selected.text() });
+             socket.emit("private", { msg:  $("input#msg").val(), to: $("input#to_user").val() });
              
              // the server will recieve the message, 
              // then maybe do some processing, then it will 
@@ -49,7 +49,7 @@
          }
          // at document read (runs only ones).
          $(document).ready(function(){
-        	 name = $('#username').val();
+        	 name = $('#from_user').val();
             // on click of the button (jquery thing)
             // the things inside this clause happen only when 
             // the button is clicked.
@@ -85,11 +85,27 @@
             $("p#log").html('got message: ' + data.msg);
             
          });
-         socket.on("private", function(data) {
+         socket.on("private", function(data) {        	 
         	 console.log(data);
+        	 // print data (jquery thing)
+             $("p#data_recieved").append("<br />\r\n" + data.from + ': ' + data.msg);
+             
+             // we log this event for fun :D
+             $("p#log").html('got message: ' + data.msg);
         	  //chatLog.append('<li class="private"><em><strong>'+ data.from +' -> '+ data.to +'</strong>: '+ data.msg +'</em></li>');
          }); 
          socket.on('broadcast', function (data) {
-             //console.log(data);
-             alert('broadcast');
+        	 if(data.tom){
+        		 switch(data.tom){
+        		 case 'welcome':
+        			 if(name == data.user){
+        				 $("p#log").html('Chào bạn: ' + data.user);
+        			 }else{
+        				 $("p#log").html(data.user + ' joined');
+        			 }
+        			 break;
+        		 }
+        	 }
+        	 
+        	 //console.log(data);
           });

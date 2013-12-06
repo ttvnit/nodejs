@@ -1,10 +1,13 @@
 var io = require('socket.io').listen(module.parent.exports.server);
+var users = {};
 // open the socket connection
 io.sockets.on('connection', function (socket) {
    
-	socket.on("private", function(data) {        
-        io.sockets.sockets[data.to].emit("private", { from: socket.id, to: data.to, msg: data.msg });
-        //socket.emit("private", { from: client.id, to: data.to, msg: data.msg });
+	socket.on("private", function(data) {   
+		if(users[data.to])
+		users[data.to].emit("private", { from: socket.nickname, to: data.to, msg: data.msg });
+		console.log(data.to + ' not connected');
+        //socket.emit("private", { from: socket.nickname, to: data.to, msg: data.msg });
 	});
 	
    // listen for the chat even. and will recieve
@@ -37,13 +40,19 @@ io.sockets.on('connection', function (socket) {
       // and then set its value to the name recieved
       // from the register even above. and then run
       // the function that follows inside it.
-      socket.set('nickname', name, function () {
-         // this kind of emit will send to all! :D
-         io.sockets.emit('broadcast', {
-            msg : "Hi " + name + '!', 
-            msgr : "mr. server"
-         });
-      });
+	   socket.nickname = name;
+	   users[name] = socket;
+	// this kind of emit will send to all! :D
+       io.sockets.emit('broadcast', {
+          msg : '', 
+          msgr : "mr. server",
+          tom	: "welcome",
+          user	: name,
+       });
+      //socket.set('nickname', name, function () {});
    });
-
+   socket.on('disconnect', function (data) {
+	  if(!socket.nickname) return;
+	  delete users[socket.nickname];
+   });
 });

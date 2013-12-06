@@ -11,7 +11,8 @@ Welcome <%= user.first_name %> <%= user.last_name %> to simple chat app, click t
 	</ul>
 </div>
 <div id="list-chat-wrapper">
-	<input type="hidden" id="username" value="<%= user.name %>" />
+	<input type="hidden" id="from_user" value="<%= user.name %>" />
+	<input type="hidden" id="to_user" value="" />
 	<input type="text" id="msg"></input><input type="submit" value="Click me" id="send-message" />
 	</p>
       <p id="log"></p>
